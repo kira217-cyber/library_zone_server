@@ -30,6 +30,16 @@ async function run() {
     // Send a ping to confirm a successful connection
 
 
+    const booksCollection = client.db('libraryZone').collection('books')
+
+    // books api
+
+    app.get('/jobs',async (req,res)=>{
+      const cursor = booksCollection.find();
+      const result = await cursor.toArray();
+      res.send(result)
+    })
+
     
 
 
