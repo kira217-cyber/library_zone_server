@@ -34,7 +34,7 @@ async function run() {
 
     // books api
 
-    app.get('/jobs',async (req,res)=>{
+    app.get('/books',async (req,res)=>{
       const cursor = booksCollection.find();
       const result = await cursor.toArray();
       res.send(result)
