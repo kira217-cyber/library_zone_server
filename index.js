@@ -28,6 +28,7 @@ async function run() {
     // Send a ping to confirm a successful connection
 
     const booksCollection = client.db("libraryZone").collection("books");
+    const borrowedBookCollection = client.db("libraryZone").collection("borrowedBooks")
 
     // books api
 
@@ -70,6 +71,32 @@ async function run() {
       );
       res.send(result);
     });
+
+    // Borrow single book method
+    app.post("/borrowed/:id", async (req, res) => {
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const borrowedBook = req.body;
+      const result = await borrowedBookCollection.insertOne(borrowedBook);
+
+      if(result.insertedId){
+        await booksCollection.updateOne(query,{
+          $inc:{
+            quantity: -1,
+          }
+        })
+      }
+      res.send(result);
+    });
+
+    // BorrowBooks get method
+
+    app.get('/borrowed/:email', async(req,res)=>{
+      const email = req.params.email;
+      const filter = {email: email}
+      const result = await borrowedBookCollection.find(filter).toArray()
+      res.send(result)
+    })
 
     await client.db("admin").command({ ping: 1 });
     console.log(
