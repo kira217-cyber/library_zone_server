@@ -46,6 +46,13 @@ async function run() {
       res.send(result);
     });
 
+    // post single book method
+    app.post("/books", async (req, res) => {
+      const newBook = req.body;
+      const result = await booksCollection.insertOne(newBook);
+      res.send(result);
+    });
+
     // update any book api
 
     app.put("/books/:id", async (req, res) => {
