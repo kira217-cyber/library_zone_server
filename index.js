@@ -49,6 +49,18 @@ async function run() {
       res.send(result);
     });
 
+    // Find books category
+    app.get("/books/:category", async (req, res) => {
+      const category = req.query.category;
+      console.log("category ", category)
+      let query = {};
+      if (category) {
+        query = { category: category };
+      }
+      const books = await booksCollection.find(query).toArray();
+      res.send(books);
+    });
+
     // post single book method
     app.post("/books", async (req, res) => {
       const newBook = req.body;
