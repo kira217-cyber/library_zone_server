@@ -28,7 +28,9 @@ async function run() {
     // Send a ping to confirm a successful connection
 
     const booksCollection = client.db("libraryZone").collection("books");
-    const borrowedBookCollection = client.db("libraryZone").collection("borrowedBooks")
+    const borrowedBookCollection = client
+      .db("libraryZone")
+      .collection("borrowedBooks");
 
     // books api
 
@@ -74,29 +76,63 @@ async function run() {
 
     // Borrow single book method
     app.post("/borrowed/:id", async (req, res) => {
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
       const borrowedBook = req.body;
       const result = await borrowedBookCollection.insertOne(borrowedBook);
 
-      if(result.insertedId){
-        await booksCollection.updateOne(query,{
-          $inc:{
+      if (result.insertedId) {
+        await booksCollection.updateOne(query, {
+          $inc: {
             quantity: -1,
-          }
-        })
+          },
+        });
       }
       res.send(result);
     });
 
     // BorrowBooks get method
 
-    app.get('/borrowed/:email', async(req,res)=>{
+    app.get("/borrowed/:email", async (req, res) => {
       const email = req.params.email;
-      const filter = {email: email}
-      const result = await borrowedBookCollection.find(filter).toArray()
-      res.send(result)
-    })
+      const filter = { email: email };
+      const result = await borrowedBookCollection.find(filter).toArray();
+      res.send(result);
+    });
+
+    app.delete("/borrowed/:id", async (req, res) => {
+      const id = req.params.id;
+
+      try {
+        const query = { _id: new ObjectId(id) };
+
+        // Step 1: Find the borrowed book entry first (to get bookId)
+        const borrowedEntry = await borrowedBookCollection.findOne(query);
+        if (!borrowedEntry) {
+          return res.status(404).send({ message: "Borrowed book not found." });
+        }
+
+        const bookId = borrowedEntry.bookId; // assuming this is stored in borrowed entry
+
+        // Step 2: Delete the borrowed entry
+        const deleteResult = await borrowedBookCollection.deleteOne(query);
+
+        if (deleteResult.deletedCount > 0 && bookId) {
+          // Step 3: Increase the quantity of the book by 1
+          await booksCollection.updateOne(
+            { _id: new ObjectId(bookId) },
+            {
+              $inc: { quantity: 1 },
+            }
+          );
+        }
+
+        res.send(deleteResult);
+      } catch (error) {
+        console.error("Error in DELETE /borrowed/:id:", error);
+        res.status(500).send({ message: "Something went wrong." });
+      }
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
