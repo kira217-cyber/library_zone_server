@@ -3,6 +3,9 @@ const app = express();
 const cors = require("cors");
 require("dotenv").config();
 
+const admin = require("firebase-admin");
+const serviceAccount = require("./firebase-library-zone.json");
+
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 3000;
 
@@ -20,6 +23,30 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+const verifyFirebaseToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+
+    console.log("token in the middle ware", decoded);
+    req.decoded = decoded
+
+    next();
+  } catch {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+};
 
 async function run() {
   try {
@@ -52,7 +79,7 @@ async function run() {
     // Find books category
     app.get("/books/:category", async (req, res) => {
       const category = req.query.category;
-      console.log("category ", category)
+      console.log("category ", category);
       let query = {};
       if (category) {
         query = { category: category };
@@ -105,8 +132,14 @@ async function run() {
 
     // BorrowBooks get method
 
-    app.get("/borrowed/:email", async (req, res) => {
+    app.get("/borrowed/:email", verifyFirebaseToken, async (req, res) => {
+
+
       const email = req.params.email;
+
+      if(email !== req.decoded.email){
+        return res.status(403).send({message:'forbidden access'})
+      }
       const filter = { email: email };
       const result = await borrowedBookCollection.find(filter).toArray();
       res.send(result);
