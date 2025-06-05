@@ -1,17 +1,31 @@
 const express = require("express");
-const app = express();
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
 require("dotenv").config();
 
 const admin = require("firebase-admin");
-const serviceAccount = require("./firebase-library-zone.json");
+// const decoded = Buffer.from(process.env.FB_SERVICE_KEY, "base64").toString(
+//   "utf8"
+// );
 
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+// console.log('token',decoded)
+
+const serviceAccount = require('./firebase-library-zone.json');
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+
+const app = express();
 const port = process.env.PORT || 3000;
+
 
 // Middle Ware
 app.use(cors());
 app.use(express.json());
+
+
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.v36kmoi.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -24,9 +38,6 @@ const client = new MongoClient(uri, {
   },
 });
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
 
 const verifyFirebaseToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
