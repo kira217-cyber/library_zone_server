@@ -1,4 +1,4 @@
 node_modules
 .env
-firebase-library-zone.json
+firebase_library_zone.json
 .vercel
