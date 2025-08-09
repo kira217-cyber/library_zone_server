@@ -70,6 +70,18 @@ async function run() {
       res.send(result);
     });
 
+    // My books api
+
+    app.get("/my-books", async (req, res) => {
+      const email = req.query.email; // client থেকে email পাঠাতে হবে
+      if (!email) {
+        return res.status(400).send({ error: "Email is required" });
+      }
+      const cursor = booksCollection.find({ email });
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
     // single book api
 
     app.get("/books/:id", async (req, res) => {
@@ -89,6 +101,23 @@ async function run() {
       }
       const books = await booksCollection.find(query).toArray();
       res.send(books);
+    });
+
+    // delete single book method
+    app.delete("/books/:id", async (req, res) => {
+      const id = req.params.id;
+      try {
+        const result = await booksCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+        if (result.deletedCount === 1) {
+          res.send({ success: true });
+        } else {
+          res.send({ success: false, message: "Book not found" });
+        }
+      } catch (error) {
+        res.status(500).send({ success: false, error: error.message });
+      }
     });
 
     // post single book method
